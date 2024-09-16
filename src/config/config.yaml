@@ -1,8 +1,0 @@
-Token: "Bot-Token"
-
-Lavalink:
-  Name: "test"
-  Hostname: "lava-v4.ajieblogs.eu.org"
-  Port: 80
-  Password: "https://dsc.gg/ajidevserver"
-  Secured: false

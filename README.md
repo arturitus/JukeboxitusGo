@@ -35,7 +35,9 @@ Lavalink:
 You can also use this bot with Docker. A Dockerfile is provided to help with the setup.
 
 Here's an example of the container hosted on a Raspberry Pi, as shown in Portainer:
-![image](https://github.com/user-attachments/assets/b4bd69b8-3817-440c-9ee6-57e78271c4e5)
+
+![image](https://github.com/user-attachments/assets/9e4057eb-b9a0-4681-91a1-0a6b521e22c5)
+
 
 ## License
 This project is licensed under the MIT License. It is not for sale and is intended solely for academic purposes and skill demonstration.

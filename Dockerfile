@@ -21,7 +21,8 @@ ENV GOOS=linux
 RUN go build -o bin/main .
 
 # Start a new stage from scratch
-FROM arm64v8/debian:bookworm-slim
+# FROM arm64v8/debian:bookworm-slim
+FROM alpine:3.19
 
 # Install required dependencies (if any)
 RUN apt-get update && apt-get install -y \

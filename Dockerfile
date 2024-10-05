@@ -25,9 +25,9 @@ RUN go build -o bin/main .
 FROM alpine:3.19
 
 # Install required dependencies (if any)
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+# RUN apt-get update && apt-get install -y \
+#     ca-certificates \
+#     && rm -rf /var/lib/apt/lists/*
 
 # Set the Current Working Directory inside the container
 WORKDIR /root/

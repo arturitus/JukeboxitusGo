@@ -49,7 +49,7 @@ func (b *Bot) onTrackEnd(player disgolink.Player, event lavalink.TrackEndEvent) 
 	if !ok {
 		return
 	}
-	if err := player.Update(context.TODO(), lavalink.WithTrack(nextTrack)); err != nil {
+	if err := player.Update(context.Background(), lavalink.WithTrack(nextTrack)); err != nil {
 		log.Error("Failed to play next track: ", err)
 	}
 }

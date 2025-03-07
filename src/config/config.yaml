@@ -1,4 +1,4 @@
-Token: "Bot-Token"
+Token: "OTIyNzcxMTM3MzI5NDk2MDY0.GryXxR.u5e45K33s7AYijdYFaNJzqKH38znvJCaniqAac"
 
 Lavalink:
   Name: "test"
@@ -6,3 +6,12 @@ Lavalink:
   Port: 80
   Password: "https://dsc.gg/ajidevserver"
   Secured: false
+
+# Token: "OTIyNzcxMTM3MzI5NDk2MDY0.GryXxR.u5e45K33s7AYijdYFaNJzqKH38znvJCaniqAac"
+
+# Lavalink:
+#   Name: "test"
+#   Hostname: "192.168.1.39"
+#   Port: 8080
+#   Password: "youshallnotpass"
+#   Secured: false

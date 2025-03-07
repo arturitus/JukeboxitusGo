@@ -108,8 +108,8 @@ func main() {
 	session.Identify.Intents = discordgo.IntentGuilds | discordgo.IntentsGuildVoiceStates
 
 	session.AddHandler(b.onApplicationCommand)
-	session.AddHandler(b.onVoiceStateUpdate)
 	session.AddHandler(b.onVoiceServerUpdate)
+	session.AddHandler(b.onVoiceStateUpdate)
 
 	if err = session.Open(); err != nil {
 		log.Fatal(err)
@@ -186,14 +186,16 @@ func (b *Bot) onVoiceStateUpdate(session *discordgo.Session, event *discordgo.Vo
 		id := snowflake.MustParse(event.ChannelID)
 		channelID = &id
 	}
-	b.Lavalink.OnVoiceStateUpdate(context.TODO(), snowflake.MustParse(event.GuildID), channelID, event.SessionID)
+	time.Sleep(500 * time.Millisecond)
+	b.Lavalink.OnVoiceStateUpdate(context.Background(), snowflake.MustParse(event.GuildID), channelID, event.SessionID)
 	if event.ChannelID == "" {
 		b.Queues.Delete(event.GuildID)
 	}
 }
 
 func (b *Bot) onVoiceServerUpdate(session *discordgo.Session, event *discordgo.VoiceServerUpdate) {
-	b.Lavalink.OnVoiceServerUpdate(context.TODO(), snowflake.MustParse(event.GuildID), event.Token, event.Endpoint)
+	time.Sleep(500 * time.Millisecond)
+	b.Lavalink.OnVoiceServerUpdate(context.Background(), snowflake.MustParse(event.GuildID), event.Token, event.Endpoint)
 }
 
 // func printConfig(config *Config) {

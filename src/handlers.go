@@ -70,7 +70,7 @@ func (b *Bot) skip(event *discordgo.InteractionCreate, data discordgo.Applicatio
 
 	// Play the next track
 	if len(queue.Tracks) > 0 {
-		err := player.Update(context.TODO(), lavalink.WithTrack(nextTrack))
+		err := player.Update(context.Background(), lavalink.WithTrack(nextTrack))
 		if err != nil {
 			return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -180,7 +180,7 @@ func (b *Bot) pause(event *discordgo.InteractionCreate, data discordgo.Applicati
 		})
 	}
 
-	if err := player.Update(context.TODO(), lavalink.WithPaused(!player.Paused())); err != nil {
+	if err := player.Update(context.Background(), lavalink.WithPaused(!player.Paused())); err != nil {
 		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -349,5 +349,5 @@ func (b *Bot) play(event *discordgo.InteractionCreate, data discordgo.Applicatio
 		return err
 	}
 
-	return player.Update(context.TODO(), lavalink.WithTrack(*toPlay))
+	return player.Update(context.Background(), lavalink.WithTrack(*toPlay))
 }

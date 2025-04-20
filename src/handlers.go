@@ -269,7 +269,14 @@ func formatPosition(position lavalink.Duration) string {
 func (b *Bot) play(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
 	identifier := data.Options[0].StringValue()
 	if !urlPattern.MatchString(identifier) && !searchPattern.MatchString(identifier) {
-		identifier = lavalink.SearchTypeYouTube.Apply(identifier)
+		switch b.SearchType {
+		case YouTube:
+			identifier = lavalink.SearchTypeYouTube.Apply(identifier)
+		case YouTubeMusic:
+			identifier = lavalink.SearchTypeYouTubeMusic.Apply(identifier)
+		case SoundCloud:
+			identifier = lavalink.SearchTypeSoundCloud.Apply(identifier)
+		}
 	}
 
 	voiceState, err := b.Session.State.VoiceState(event.GuildID, event.Member.User.ID)

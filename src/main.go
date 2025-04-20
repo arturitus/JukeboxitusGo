@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"regexp"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -36,12 +37,51 @@ var (
 	// NodeSecure, _ = strconv.ParseBool(os.Getenv("NODE_SECURE"))
 )
 
+type SearchType byte
+
+const (
+	YouTube SearchType = iota
+	YouTubeMusic
+	SoundCloud
+)
+
+var stringToSearchType = map[string]SearchType{
+	"youTube":      YouTube,
+	"youTubeMusic": YouTubeMusic,
+	"soundCloud":   SoundCloud,
+}
+
+var searchTypeToString = map[SearchType]string{
+	YouTube:      "youTube",
+	YouTubeMusic: "youTubeMusic",
+	SoundCloud:   "soundCloud",
+}
+
+func (s SearchType) String() string {
+	if str, ok := searchTypeToString[s]; ok {
+		return str
+	}
+	return searchTypeToString[YouTube] // fallback to default
+}
+
+const defaultSearchType = YouTube
+
+func ParseSearchType(str string) SearchType {
+	str = strings.TrimSpace(str)
+
+	if val, ok := stringToSearchType[str]; ok {
+		return val
+	}
+	return defaultSearchType
+}
+
 type LavalinkConfig struct {
-	Name     string `yaml:"Name"`
-	Hostname string `yaml:"Hostname"`
-	Port     int    `yaml:"Port"`
-	Password string `yaml:"Password"`
-	Secured  bool   `yaml:"Secured"`
+	Name       string `yaml:"Name"`
+	Hostname   string `yaml:"Hostname"`
+	Port       int    `yaml:"Port"`
+	Password   string `yaml:"Password"`
+	Secured    bool   `yaml:"Secured"`
+	SearchType string `yaml:"SearchType"`
 }
 
 type Config struct {
@@ -50,10 +90,11 @@ type Config struct {
 }
 
 type Bot struct {
-	Session  *discordgo.Session
-	Lavalink disgolink.Client
-	Handlers map[string]func(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error
-	Queues   *QueueManager
+	Session    *discordgo.Session
+	Lavalink   disgolink.Client
+	Handlers   map[string]func(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error
+	Queues     *QueueManager
+	SearchType SearchType
 }
 
 func main() {
@@ -73,6 +114,7 @@ func main() {
 	name, nameFromEnv := getEnv("NAME", config.Lavalink.Name)
 	hostName, hostNameFromEnv := getEnv("HOSTNAME", config.Lavalink.Hostname)
 	portStr, portFromEnv := getEnv("PORT", strconv.Itoa(config.Lavalink.Port))
+	searchTypeStr, searchTypeFromEnv := getEnv("SEARCH_TYPE", config.Lavalink.SearchType)
 	port, err := strconv.Atoi(portStr)
 	if err != nil {
 		log.Fatalf("invalid PORT value: %v", err)
@@ -91,11 +133,13 @@ func main() {
 	fmt.Printf("	Port (%s): %d\n", checkSource(portFromEnv), port)
 	fmt.Printf("	Password (%s): %q\n", checkSource(passwordFromEnv), password)
 	fmt.Printf("	Secured (%s): %v\n", checkSource(securedFromEnv), secured)
+	fmt.Printf("	SerachType (%s): %v\n", checkSource(searchTypeFromEnv), searchTypeStr)
 
 	b := &Bot{
 		Queues: &QueueManager{
 			queues: make(map[string]*Queue),
 		},
+		SearchType: ParseSearchType(searchTypeStr),
 	}
 
 	session, err := discordgo.New("Bot " + token)

@@ -1,17 +1,19 @@
 Token: "OTIyNzcxMTM3MzI5NDk2MDY0.GryXxR.u5e45K33s7AYijdYFaNJzqKH38znvJCaniqAac"
 
 Lavalink:
-  Name: "test"
-  Hostname: "lava-v4.ajieblogs.eu.org"
-  Port: 80
-  Password: "https://dsc.gg/ajidevserver"
+  Name: "ARINO Music"
+  Hostname: "us.sanode.xyz"
+  Port: 25568
+  Password: "discord.gg/W2GheK3F9m"
   Secured: false
+  SearchType: youTube
 
 # Token: "OTIyNzcxMTM3MzI5NDk2MDY0.GryXxR.u5e45K33s7AYijdYFaNJzqKH38znvJCaniqAac"
 
 # Lavalink:
-#   Name: "test"
+#   Name: "Mi serverr"
 #   Hostname: "192.168.1.39"
-#   Port: 8080
+#   Port: 2333
 #   Password: "youshallnotpass"
 #   Secured: false
+#   SearchType: soundCloud

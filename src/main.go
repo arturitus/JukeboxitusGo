@@ -21,7 +21,7 @@ import (
 	"github.com/disgoorg/disgolink/v3/disgolink"
 )
 
-//go:embed config.yaml
+//go:embed config/config.yaml
 var configFile embed.FS
 
 var (
@@ -97,7 +97,7 @@ func main() {
 	log.Info("discordgo version: ", discordgo.VERSION)
 	log.Info("disgolink version: ", disgolink.Version)
 
-	config, err := loadConfig("config.yaml")
+	config, err := loadConfig("config/config.yaml")
 	if err != nil {
 		log.Fatalf("error loading config: %v", err)
 	}

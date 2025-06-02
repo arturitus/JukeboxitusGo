@@ -19,3 +19,7 @@ func GetEmbeddedConfig() (embed.FS, error) {
 	fmt.Println("INFO: Building for Windows. 'config.yaml' is embedded.")
 	return embeddedConfigFS, nil
 }
+
+func BuildType() string {
+	return "windows"
+}

@@ -29,6 +29,8 @@ func main() {
 	log.Info("discordgo version: ", discordgo.VERSION)
 	log.Info("disgolink version: ", disgolink.Version)
 
+	log.Info(build.BuildType())
+
 	config, err := loadConfig(build.ConfigFile)
 	if err != nil {
 		log.Fatalf("error loading config: %v", err)

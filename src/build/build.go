@@ -21,3 +21,7 @@ func GetEmbeddedConfig() (embed.FS, error) {
 	fmt.Println("INFO: Building for Non-Windows. 'config.yaml' is NOT embedded.")
 	return embeddedConfigFS, errors.New("config.yaml is not embedded on non-Windows platforms")
 }
+
+func BuildType() string {
+	return "not windows"
+}

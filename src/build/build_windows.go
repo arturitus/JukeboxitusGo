@@ -7,6 +7,7 @@ import (
 	"fmt"
 )
 
+//go:embed config.yaml
 var embeddedConfigFS embed.FS
 
 const ConfigFile = "config.yaml"

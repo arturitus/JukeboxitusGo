@@ -13,12 +13,12 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy the source code into the container
-COPY src .
+COPY . .
 
 ENV GOARCH=arm64
 ENV GOOS=linux
 # Build the Go app
-RUN go build -o bin/main .
+RUN go build -o bin/main ./src
 
 # Start a new stage from scratch
 # FROM arm64v8/debian:bookworm-slim
@@ -28,6 +28,8 @@ FROM alpine:3.19
 # RUN apt-get update && apt-get install -y \
 #     ca-certificates \
 #     && rm -rf /var/lib/apt/lists/*
+
+RUN apk add --no-cache ca-certificates
 
 # Set the Current Working Directory inside the container
 WORKDIR /root/

@@ -21,20 +21,13 @@ import (
 	"github.com/disgoorg/disgolink/v3/disgolink"
 )
 
-//go:embed config/config.yaml
+//go:embed config.yaml
 var configFile embed.FS
 
 var (
 	urlPattern    = regexp.MustCompile("^https?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]?")
 	searchPattern = regexp.MustCompile(`^(.{2})search:(.+)`)
-
-	// Token   = os.Getenv("TOKEN")
-	GuildId = os.Getenv("GUILD_ID")
-
-	// NodeName      = os.Getenv("NODE_NAME")
-	// NodeAddress   = os.Getenv("NODE_ADDRESS")
-	// NodePassword  = os.Getenv("NODE_PASSWORD")
-	// NodeSecure, _ = strconv.ParseBool(os.Getenv("NODE_SECURE"))
+	GuildId       = os.Getenv("GUILD_ID")
 )
 
 type SearchType byte
@@ -61,7 +54,7 @@ func (s SearchType) String() string {
 	if str, ok := searchTypeToString[s]; ok {
 		return str
 	}
-	return searchTypeToString[YouTube] // fallback to default
+	return searchTypeToString[YouTube]
 }
 
 const defaultSearchType = YouTube
@@ -104,11 +97,10 @@ func main() {
 	log.Info("discordgo version: ", discordgo.VERSION)
 	log.Info("disgolink version: ", disgolink.Version)
 
-	config, err := loadConfig("config/config.yaml")
+	config, err := loadConfig("config.yaml")
 	if err != nil {
 		log.Fatalf("error loading config: %v", err)
 	}
-	// printConfig(config)
 
 	token, tokenFromEnv := getEnv("TOKEN", config.Token)
 	name, nameFromEnv := getEnv("NAME", config.Lavalink.Name)
@@ -123,8 +115,6 @@ func main() {
 
 	securedStr, securedFromEnv := getEnv("SECURED", strconv.FormatBool(config.Lavalink.Secured))
 	secured, _ := strconv.ParseBool(securedStr)
-
-	// Print used config
 
 	fmt.Printf("Token (%s): %q\n", checkSource(tokenFromEnv), token)
 	fmt.Printf("Lavalink:\n")
@@ -242,14 +232,6 @@ func (b *Bot) onVoiceServerUpdate(session *discordgo.Session, event *discordgo.V
 	b.Lavalink.OnVoiceServerUpdate(context.Background(), snowflake.MustParse(event.GuildID), event.Token, event.Endpoint)
 }
 
-// func printConfig(config *Config) {
-// 	fmt.Printf("Token: %s\n", config.Token)
-// 	fmt.Printf("Lavalink:\n")
-// 	fmt.Printf("  Hostname: %s\n", config.Lavalink.Hostname)
-// 	fmt.Printf("  Port: %d\n", config.Lavalink.Port)
-// 	fmt.Printf("  Secured: %v\n", config.Lavalink.Secured)
-// }
-
 func loadConfig(filePath string) (*Config, error) {
 	data, err := configFile.ReadFile(filePath)
 	if err != nil {
@@ -267,15 +249,14 @@ func loadConfig(filePath string) (*Config, error) {
 
 func getEnv(key, fallback string) (string, bool) {
 	if value, exists := os.LookupEnv(key); exists {
-		return value, true // Value from environment
+		return value, true
 	}
-	return fallback, false // Value from config
+	return fallback, false
 }
 
-// checkSource returns "*" if the value is from the environment, otherwise returns an empty string.
 func checkSource(fromEnv bool) string {
 	if fromEnv {
-		return "env" // Point or star for environment variables
+		return "env"
 	}
 	return "config"
 }

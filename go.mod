@@ -1,4 +1,4 @@
-module github.com/disgoorg/disgolink/v3/_examples/discordgo
+module jukeboxitus
 
 go 1.23.0
 

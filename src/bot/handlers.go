@@ -1,4 +1,4 @@
-package main
+package bot
 
 import (
 	"context"
@@ -11,9 +11,11 @@ import (
 
 	"github.com/disgoorg/disgolink/v3/disgolink"
 	"github.com/disgoorg/disgolink/v3/lavalink"
+
+	bot_config "jukeboxitus/src/bot/config"
 )
 
-func (b *Bot) shuffle(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
+func (b *Bot) Shuffle(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
 	queue := b.Queues.Get(event.GuildID)
 	if queue == nil {
 		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
@@ -33,7 +35,7 @@ func (b *Bot) shuffle(event *discordgo.InteractionCreate, data discordgo.Applica
 	})
 }
 
-func (b *Bot) skip(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
+func (b *Bot) Skip(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
 	// Get the player for the current guild
 	player := b.Lavalink.ExistingPlayer(snowflake.MustParse(event.GuildID))
 
@@ -89,7 +91,7 @@ func (b *Bot) skip(event *discordgo.InteractionCreate, data discordgo.Applicatio
 	})
 }
 
-func (b *Bot) queueType(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
+func (b *Bot) QueueType(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
 	queue := b.Queues.Get(event.GuildID)
 	if queue == nil {
 		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
@@ -109,7 +111,7 @@ func (b *Bot) queueType(event *discordgo.InteractionCreate, data discordgo.Appli
 	})
 }
 
-func (b *Bot) clearQueue(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
+func (b *Bot) ClearQueue(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
 	queue := b.Queues.Get(event.GuildID)
 	if queue == nil {
 		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
@@ -129,7 +131,7 @@ func (b *Bot) clearQueue(event *discordgo.InteractionCreate, data discordgo.Appl
 	})
 }
 
-func (b *Bot) queue(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
+func (b *Bot) Queue(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
 	queue := b.Queues.Get(event.GuildID)
 	if queue == nil {
 		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
@@ -169,7 +171,7 @@ func (b *Bot) queue(event *discordgo.InteractionCreate, data discordgo.Applicati
 	})
 }
 
-func (b *Bot) pause(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
+func (b *Bot) Pause(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
 	player := b.Lavalink.ExistingPlayer(snowflake.MustParse(event.GuildID))
 	if player == nil {
 		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
@@ -202,7 +204,7 @@ func (b *Bot) pause(event *discordgo.InteractionCreate, data discordgo.Applicati
 	})
 }
 
-func (b *Bot) stop(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
+func (b *Bot) Stop(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
 	player := b.Lavalink.ExistingPlayer(snowflake.MustParse(event.GuildID))
 	if player == nil {
 		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
@@ -230,7 +232,7 @@ func (b *Bot) stop(event *discordgo.InteractionCreate, data discordgo.Applicatio
 	})
 }
 
-func (b *Bot) nowPlaying(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
+func (b *Bot) NowPlaying(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
 	player := b.Lavalink.ExistingPlayer(snowflake.MustParse(event.GuildID))
 	if player == nil {
 		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
@@ -259,22 +261,15 @@ func (b *Bot) nowPlaying(event *discordgo.InteractionCreate, data discordgo.Appl
 	})
 }
 
-func formatPosition(position lavalink.Duration) string {
-	if position == 0 {
-		return "0:00"
-	}
-	return fmt.Sprintf("%d:%02d", position.Minutes(), position.SecondsPart())
-}
-
-func (b *Bot) play(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
+func (b *Bot) Play(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
 	identifier := data.Options[0].StringValue()
 	if !urlPattern.MatchString(identifier) && !searchPattern.MatchString(identifier) {
 		switch b.SearchType {
-		case YouTube:
+		case bot_config.YouTube:
 			identifier = lavalink.SearchTypeYouTube.Apply(identifier)
-		case YouTubeMusic:
+		case bot_config.YouTubeMusic:
 			identifier = lavalink.SearchTypeYouTubeMusic.Apply(identifier)
-		case SoundCloud:
+		case bot_config.SoundCloud:
 			identifier = lavalink.SearchTypeSoundCloud.Apply(identifier)
 		}
 	}
@@ -357,4 +352,11 @@ func (b *Bot) play(event *discordgo.InteractionCreate, data discordgo.Applicatio
 	}
 
 	return player.Update(context.Background(), lavalink.WithTrack(*toPlay))
+}
+
+func formatPosition(position lavalink.Duration) string {
+	if position == 0 {
+		return "0:00"
+	}
+	return fmt.Sprintf("%d:%02d", position.Minutes(), position.SecondsPart())
 }

@@ -5,7 +5,7 @@ if not exist bin (
 )
 
 REM Build the Go program
-go build -o bin/main.exe ./src
+go build -tags windows -o bin/main.exe ./src
 
 REM Check if the build was successful
 if %ERRORLEVEL% NEQ 0 (

@@ -1,4 +1,4 @@
-package main
+package bot
 
 import (
 	"log/slog"
@@ -80,7 +80,7 @@ var commands = []*discordgo.ApplicationCommand{
 	},
 }
 
-func registerCommands(s *discordgo.Session) {
+func RegisterCommands(s *discordgo.Session) {
 	if _, err := s.ApplicationCommandBulkOverwrite(s.State.User.ID, GuildId, commands); err != nil {
 		log.Warn("Failed to register commands", slog.Any("err", err))
 	}

@@ -2,13 +2,10 @@ package main
 
 import (
 	"context"
-	"embed"
 	"fmt"
 	"os"
 	"os/signal"
-	"regexp"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -19,76 +16,11 @@ import (
 	"github.com/disgoorg/log"
 
 	"github.com/disgoorg/disgolink/v3/disgolink"
+
+	"jukeboxitus/src/bot"
+	bot_config "jukeboxitus/src/bot/config"
+	"jukeboxitus/src/build"
 )
-
-//go:embed config/config.yaml
-var configFile embed.FS
-
-var (
-	urlPattern    = regexp.MustCompile("^https?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]?")
-	searchPattern = regexp.MustCompile(`^(.{2})search:(.+)`)
-	GuildId       = os.Getenv("GUILD_ID")
-)
-
-type SearchType byte
-
-const (
-	YouTube SearchType = iota
-	YouTubeMusic
-	SoundCloud
-)
-
-var stringToSearchType = map[string]SearchType{
-	"youTube":      YouTube,
-	"youTubeMusic": YouTubeMusic,
-	"soundCloud":   SoundCloud,
-}
-
-var searchTypeToString = map[SearchType]string{
-	YouTube:      "youTube",
-	YouTubeMusic: "youTubeMusic",
-	SoundCloud:   "soundCloud",
-}
-
-func (s SearchType) String() string {
-	if str, ok := searchTypeToString[s]; ok {
-		return str
-	}
-	return searchTypeToString[YouTube]
-}
-
-const defaultSearchType = YouTube
-
-func ParseSearchType(str string) SearchType {
-	str = strings.TrimSpace(str)
-
-	if val, ok := stringToSearchType[str]; ok {
-		return val
-	}
-	return defaultSearchType
-}
-
-type LavalinkConfig struct {
-	Name       string `yaml:"Name"`
-	Hostname   string `yaml:"Hostname"`
-	Port       int    `yaml:"Port"`
-	Password   string `yaml:"Password"`
-	Secured    bool   `yaml:"Secured"`
-	SearchType string `yaml:"SearchType"`
-}
-
-type Config struct {
-	Token    string         `yaml:"Token"`
-	Lavalink LavalinkConfig `yaml:"Lavalink"`
-}
-
-type Bot struct {
-	Session    *discordgo.Session
-	Lavalink   disgolink.Client
-	Handlers   map[string]func(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error
-	Queues     *QueueManager
-	SearchType SearchType
-}
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -97,7 +29,7 @@ func main() {
 	log.Info("discordgo version: ", discordgo.VERSION)
 	log.Info("disgolink version: ", disgolink.Version)
 
-	config, err := loadConfig("config/config.yaml")
+	config, err := loadConfig(build.ConfigFile)
 	if err != nil {
 		log.Fatalf("error loading config: %v", err)
 	}
@@ -125,11 +57,11 @@ func main() {
 	fmt.Printf("	Secured (%s): %v\n", checkSource(securedFromEnv), secured)
 	fmt.Printf("	SerachType (%s): %v\n", checkSource(searchTypeFromEnv), searchTypeStr)
 
-	b := &Bot{
-		Queues: &QueueManager{
-			queues: make(map[string]*Queue),
+	b := &bot.Bot{
+		Queues: &bot.QueueManager{
+			Queues: make(map[string]*bot.Queue),
 		},
-		SearchType: ParseSearchType(searchTypeStr),
+		SearchType: bot_config.ParseSearchType(searchTypeStr),
 	}
 
 	session, err := discordgo.New("Bot " + token)
@@ -141,36 +73,36 @@ func main() {
 	session.State.TrackVoice = true
 	session.Identify.Intents = discordgo.IntentGuilds | discordgo.IntentsGuildVoiceStates
 
-	session.AddHandler(b.onApplicationCommand)
-	session.AddHandler(b.onVoiceServerUpdate)
-	session.AddHandler(b.onVoiceStateUpdate)
+	session.AddHandler(b.OnApplicationCommand)
+	session.AddHandler(b.OnVoiceServerUpdate)
+	session.AddHandler(b.OnVoiceStateUpdate)
 
 	if err = session.Open(); err != nil {
 		log.Fatal(err)
 	}
 	defer session.Close()
 
-	registerCommands(session)
+	bot.RegisterCommands(session)
 
 	b.Lavalink = disgolink.New(snowflake.MustParse(session.State.User.ID),
-		disgolink.WithListenerFunc(b.onPlayerPause),
-		disgolink.WithListenerFunc(b.onPlayerResume),
-		disgolink.WithListenerFunc(b.onTrackStart),
-		disgolink.WithListenerFunc(b.onTrackEnd),
-		disgolink.WithListenerFunc(b.onTrackException),
-		disgolink.WithListenerFunc(b.onTrackStuck),
-		disgolink.WithListenerFunc(b.onWebSocketClosed),
+		disgolink.WithListenerFunc(b.OnPlayerPause),
+		disgolink.WithListenerFunc(b.OnPlayerResume),
+		disgolink.WithListenerFunc(b.OnTrackStart),
+		disgolink.WithListenerFunc(b.OnTrackEnd),
+		disgolink.WithListenerFunc(b.OnTrackException),
+		disgolink.WithListenerFunc(b.OnTrackStuck),
+		disgolink.WithListenerFunc(b.OnWebSocketClosed),
 	)
 	b.Handlers = map[string]func(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error{
-		"play":        b.play,
-		"pause":       b.pause,
-		"now-playing": b.nowPlaying,
-		"stop":        b.stop,
-		"skip":        b.skip,
-		"queue":       b.queue,
-		"clear-queue": b.clearQueue,
-		"queue-type":  b.queueType,
-		"shuffle":     b.shuffle,
+		"play":        b.Play,
+		"pause":       b.Pause,
+		"now-playing": b.NowPlaying,
+		"stop":        b.Stop,
+		"skip":        b.Skip,
+		"queue":       b.Queue,
+		"clear-queue": b.ClearQueue,
+		"queue-type":  b.QueueType,
+		"shuffle":     b.Shuffle,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -197,48 +129,18 @@ func main() {
 	<-s
 }
 
-func (b *Bot) onApplicationCommand(session *discordgo.Session, event *discordgo.InteractionCreate) {
-	data := event.ApplicationCommandData()
-
-	handler, ok := b.Handlers[data.Name]
-	if !ok {
-		log.Info("unknown command: ", data.Name)
-		return
-	}
-	if err := handler(event, data); err != nil {
-		log.Error("error handling command: ", err)
-	}
-}
-
-func (b *Bot) onVoiceStateUpdate(session *discordgo.Session, event *discordgo.VoiceStateUpdate) {
-	if event.UserID != session.State.User.ID {
-		return
-	}
-
-	var channelID *snowflake.ID
-	if event.ChannelID != "" {
-		id := snowflake.MustParse(event.ChannelID)
-		channelID = &id
-	}
-	time.Sleep(500 * time.Millisecond)
-	b.Lavalink.OnVoiceStateUpdate(context.Background(), snowflake.MustParse(event.GuildID), channelID, event.SessionID)
-	if event.ChannelID == "" {
-		b.Queues.Delete(event.GuildID)
-	}
-}
-
-func (b *Bot) onVoiceServerUpdate(session *discordgo.Session, event *discordgo.VoiceServerUpdate) {
-	time.Sleep(500 * time.Millisecond)
-	b.Lavalink.OnVoiceServerUpdate(context.Background(), snowflake.MustParse(event.GuildID), event.Token, event.Endpoint)
-}
-
-func loadConfig(filePath string) (*Config, error) {
-	data, err := configFile.ReadFile(filePath)
+func loadConfig(filePath string) (*bot_config.Config, error) {
+	embeded, err := build.GetEmbeddedConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	var config Config
+	data, err := embeded.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	var config bot_config.Config
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
 		return nil, err

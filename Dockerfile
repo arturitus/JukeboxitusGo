@@ -13,6 +13,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy the source code into the container
+COPY . .
 
 ENV GOARCH=arm64
 ENV GOOS=linux
@@ -28,6 +29,7 @@ FROM alpine:3.19
 #     ca-certificates \
 #     && rm -rf /var/lib/apt/lists/*
 
+RUN apk add --no-cache ca-certificates
 # Set the Current Working Directory inside the container
 WORKDIR /root/
 

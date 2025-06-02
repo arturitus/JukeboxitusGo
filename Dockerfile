@@ -18,7 +18,7 @@ COPY . .
 ENV GOARCH=arm64
 ENV GOOS=linux
 # Build the Go app
-RUN go build -tags windows -o bin/main ./src
+RUN go build -o bin/main ./src
 
 # Start a new stage from scratch
 # FROM arm64v8/debian:bookworm-slim

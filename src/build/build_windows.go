@@ -1,4 +1,5 @@
 //go:build windows
+// +build windows
 
 package build
 
@@ -10,7 +11,7 @@ import (
 //go:embed config.yaml
 var embeddedConfigFS embed.FS
 
-const ConfigFile = "config.yaml"
+const ConfigFile string = "config.yaml"
 
 // GetEmbeddedConfig returns the embedded config file system for Windows.
 // This function will only be available when building for Windows.

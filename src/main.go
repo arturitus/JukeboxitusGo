@@ -31,21 +31,35 @@ func main() {
 
 	log.Info(build.BuildType())
 
-	config, err := loadConfig(build.ConfigFile)
-	if err != nil {
-		log.Fatalf("error loading config: %v", err)
-	}
+	config := loadConfig(build.ConfigFile)
 
 	token, tokenFromEnv := getEnv("TOKEN", config.Token)
+	if token == "" {
+		log.Fatal("missing 'TOKEN'")
+		return
+	}
 	name, nameFromEnv := getEnv("NAME", config.Lavalink.Name)
 	hostName, hostNameFromEnv := getEnv("HOSTNAME", config.Lavalink.Hostname)
+	if hostName == "" {
+		log.Fatal("missing 'HOSTNAME'")
+		return
+	}
 	portStr, portFromEnv := getEnv("PORT", strconv.Itoa(config.Lavalink.Port))
+	if portStr == "" {
+		log.Fatal("missing 'PORT'")
+		return
+	}
 	searchTypeStr, searchTypeFromEnv := getEnv("SEARCH_TYPE", config.Lavalink.SearchType)
 	port, err := strconv.Atoi(portStr)
 	if err != nil {
 		log.Fatalf("invalid PORT value: %v", err)
+		return
 	}
 	password, passwordFromEnv := getEnv("PASSWORD", config.Lavalink.Password)
+	if password == "" {
+		log.Fatal("missing 'PASSWORD'")
+		return
+	}
 
 	securedStr, securedFromEnv := getEnv("SECURED", strconv.FormatBool(config.Lavalink.Secured))
 	secured, _ := strconv.ParseBool(securedStr)
@@ -69,6 +83,7 @@ func main() {
 	session, err := discordgo.New("Bot " + token)
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
 	b.Session = session
 
@@ -81,6 +96,7 @@ func main() {
 
 	if err = session.Open(); err != nil {
 		log.Fatal(err)
+		return
 	}
 	defer session.Close()
 
@@ -118,10 +134,12 @@ func main() {
 	})
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
 	version, err := node.Version(ctx)
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
 	log.Infof("node version: %s", version)
 
@@ -131,24 +149,24 @@ func main() {
 	<-s
 }
 
-func loadConfig(filePath string) (*bot_config.Config, error) {
+func loadConfig(filePath string) bot_config.Config {
 	embeded, err := build.GetEmbeddedConfig()
 	if err != nil {
-		return nil, err
+		return bot_config.Config{}
 	}
 
 	data, err := embeded.ReadFile(filePath)
 	if err != nil {
-		return nil, err
+		return bot_config.Config{}
 	}
 
 	var config bot_config.Config
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
-		return nil, err
+		return config
 	}
 
-	return &config, nil
+	return config
 }
 
 func getEnv(key, fallback string) (string, bool) {

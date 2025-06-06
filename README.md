@@ -36,7 +36,7 @@ You can also use this bot with Docker. A Dockerfile is provided to help with the
 
 Here's an example of the container hosted on a Raspberry Pi, as shown in Portainer:
 
-![image](https://github.com/user-attachments/assets/9e4057eb-b9a0-4681-91a1-0a6b521e22c5)
+![Image](https://github.com/user-attachments/assets/bac84d44-af78-4ce0-8a74-17fe22a118da)
 
 
 ## License

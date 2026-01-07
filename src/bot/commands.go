@@ -1,9 +1,8 @@
 package bot
 
 import (
-	"log/slog"
-
 	"github.com/bwmarrin/discordgo"
+	"github.com/disgoorg/json"
 	"github.com/disgoorg/log"
 )
 
@@ -78,10 +77,54 @@ var commands = []*discordgo.ApplicationCommand{
 			},
 		},
 	},
+	{
+		Name:        "volume",
+		Description: "Sets the player volume",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionInteger,
+				Name:        "level",
+				Description: "Volume level (0-100)",
+				Required:    true,
+				MinValue:    json.Ptr(0.0),
+				MaxValue:    100,
+			},
+		},
+	},
+	{
+		Name:        "bass-boost",
+		Description: "Toggles bass boost filter",
+	},
+	{
+		Name:        "eight-d",
+		Description: "Toggles 8-D audio filter",
+	},
+	{
+		Name:        "lyrics",
+		Description: "Get lyrics for the current song",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "artist",
+				Description: "The name of the artist",
+				Required:    false,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "title",
+				Description: "The name of the song",
+				Required:    false,
+			},
+		},
+	},
 }
 
 func RegisterCommands(s *discordgo.Session) {
-	if _, err := s.ApplicationCommandBulkOverwrite(s.State.User.ID, GuildId, commands); err != nil {
-		log.Warn("Failed to register commands", slog.Any("err", err))
+	// Replace GuildId with your actual test server ID if it's hardcoded
+	cmds, err := s.ApplicationCommandBulkOverwrite(s.State.User.ID, GuildId, commands)
+	if err != nil {
+		log.Error("Failed to register commands: ", err)
+	} else {
+		log.Infof("Successfully registered %d commands for Guild: %s", len(cmds), GuildId)
 	}
 }

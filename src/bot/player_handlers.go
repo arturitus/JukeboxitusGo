@@ -25,6 +25,7 @@ func (b *Bot) OnTrackStart(player disgolink.Player, event lavalink.TrackStartEve
 func (b *Bot) OnTrackEnd(player disgolink.Player, event lavalink.TrackEndEvent) {
 	fmt.Printf("onTrackEnd: %v\n", event)
 
+	// MayStartNext is false if the track was stopped or replaced manually
 	if !event.Reason.MayStartNext() {
 		return
 	}
@@ -34,21 +35,27 @@ func (b *Bot) OnTrackEnd(player disgolink.Player, event lavalink.TrackEndEvent) 
 		nextTrack lavalink.Track
 		ok        bool
 	)
+
 	switch queue.Type {
 	case QueueTypeNormal:
 		nextTrack, ok = queue.Next()
 
 	case QueueTypeRepeatTrack:
 		nextTrack = event.Track
+		ok = true // Fix: Ensure we proceed to play
 
 	case QueueTypeRepeatQueue:
 		queue.Add(event.Track)
 		nextTrack, ok = queue.Next()
+		// ok will be true because we just added a track
 	}
 
+	// If no tracks are left in the queue and we aren't repeating
 	if !ok {
 		return
 	}
+
+	// Play the determined next track
 	if err := player.Update(context.Background(), lavalink.WithTrack(nextTrack)); err != nil {
 		log.Error("Failed to play next track: ", err)
 	}

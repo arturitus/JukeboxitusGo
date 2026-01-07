@@ -15,11 +15,12 @@ import (
 )
 
 type Bot struct {
-	Session    *discordgo.Session
-	Lavalink   disgolink.Client
-	Handlers   map[string]func(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error
-	Queues     *QueueManager
-	SearchType bot_config.SearchType
+	Session     *discordgo.Session
+	Lavalink    disgolink.Client
+	Handlers    map[string]func(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error
+	Queues      *QueueManager
+	SearchType  bot_config.SearchType
+	GeniusToken string
 }
 
 var (

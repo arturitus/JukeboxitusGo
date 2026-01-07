@@ -15,8 +15,8 @@ type QueueType string
 
 const (
 	QueueTypeNormal      QueueType = "normal"
-	QueueTypeRepeatTrack QueueType = "repeat_track"
-	QueueTypeRepeatQueue QueueType = "repeat_queue"
+	QueueTypeRepeatTrack QueueType = "repeat-track"
+	QueueTypeRepeatQueue QueueType = "repeat-queue"
 )
 
 func (q QueueType) String() string {

@@ -1,362 +1,356 @@
 package bot
 
-import (
-	"context"
-	"fmt"
-	"time"
+// import (
+// 	"context"
+// 	"fmt"
+// 	"time"
 
-	"github.com/bwmarrin/discordgo"
-	"github.com/disgoorg/json"
-	"github.com/disgoorg/snowflake/v2"
+// 	"github.com/bwmarrin/discordgo"
+// 	"github.com/disgoorg/snowflake/v2"
 
-	"github.com/disgoorg/disgolink/v3/disgolink"
-	"github.com/disgoorg/disgolink/v3/lavalink"
+// 	"github.com/disgoorg/disgolink/v3/disgolink"
+// 	"github.com/disgoorg/disgolink/v3/lavalink"
 
-	bot_config "jukeboxitus/src/bot/config"
-)
+// 	bot_config "jukeboxitus/src/bot/config"
+// )
 
-func (b *Bot) Shuffle(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
-	queue := b.Queues.Get(event.GuildID)
-	if queue == nil {
-		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "No player found",
-			},
-		})
-	}
+// func (b *Bot) Shuffle(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
+// 	queue := b.Queues.Get(event.GuildID)
 
-	queue.Shuffle()
-	return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: "Queue shuffled",
-		},
-	})
-}
+// 	// Error: No tracks to shuffle
+// 	if queue == nil || len(queue.Tracks) == 0 {
+// 		return b.SendResponse(
+// 			event.Interaction,
+// 			"Queue Error",
+// 			fmt.Sprintf("%s There is no active queue to shuffle right now.", IconEmpty),
+// 			ColorError,
+// 		)
+// 	}
 
-func (b *Bot) Skip(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
-	// Get the player for the current guild
-	player := b.Lavalink.ExistingPlayer(snowflake.MustParse(event.GuildID))
+// 	queue.Shuffle()
 
-	if player == nil {
-		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "No player found.",
-			},
-		})
-	}
+// 	// Success
+// 	return b.SendResponse(
+// 		event.Interaction,
+// 		"Queue Shuffled",
+// 		fmt.Sprintf("%s Successfully shuffled **%d** tracks!", IconShuffle, len(queue.Tracks)),
+// 		ColorSuccess,
+// 	)
+// }
 
-	// Get the queue for the current guild
-	queue := b.Queues.Get(event.GuildID)
-	if queue == nil {
-		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "No queue found.",
-			},
-		})
-	}
+// func (b *Bot) Skip(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
+// 	// 1. Get the player
+// 	player := b.Lavalink.ExistingPlayer(snowflake.MustParse(event.GuildID))
+// 	if player == nil {
+// 		return b.SendResponse(event.Interaction, "Playback Error",
+// 			fmt.Sprintf("%s No active player found.", IconError), ColorError)
+// 	}
 
-	// Skip the current track
-	nextTrack, ok := queue.Next()
-	if !ok {
-		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "No more tracks to skip to.",
-			},
-		})
-	}
+// 	// 2. Get the queue
+// 	queue := b.Queues.Get(event.GuildID)
+// 	if queue == nil {
+// 		return b.SendResponse(event.Interaction, "Queue Error",
+// 			fmt.Sprintf("%s No queue found for this server.", IconEmpty), ColorError)
+// 	}
 
-	// Play the next track
-	if len(queue.Tracks) > 0 {
-		err := player.Update(context.Background(), lavalink.WithTrack(nextTrack))
-		if err != nil {
-			return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: fmt.Sprintf("Error while playing the next track: `%s`", err),
-				},
-			})
-		}
-	}
+// 	// 3. Try to get the next track
+// 	nextTrack, ok := queue.Next()
+// 	if !ok {
+// 		return b.SendResponse(event.Interaction, "End of Queue",
+// 			fmt.Sprintf("%s No more tracks to skip to.", IconEmpty), ColorWarning)
+// 	}
 
-	return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: fmt.Sprintf("Skipped to the next track: [`%s`](<%s>)", nextTrack.Info.Title, *nextTrack.Info.URI),
-		},
-	})
-}
+// 	// 4. Update the player with the new track
+// 	err := player.Update(context.Background(), lavalink.WithTrack(nextTrack))
+// 	if err != nil {
+// 		return b.SendResponse(event.Interaction, "Playback Error",
+// 			fmt.Sprintf("%s Error while playing the next track: `%s`", IconError, err), ColorError)
+// 	}
 
-func (b *Bot) QueueType(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
-	queue := b.Queues.Get(event.GuildID)
-	if queue == nil {
-		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "No player found",
-			},
-		})
-	}
+// 	// 5. Success Card
+// 	return b.SendResponse(
+// 		event.Interaction,
+// 		"Track Skipped",
+// 		fmt.Sprintf("%s Skipped to: **[`%s`](<%s>)**", IconSkip, nextTrack.Info.Title, *nextTrack.Info.URI),
+// 		ColorSuccess,
+// 	)
+// }
 
-	queue.Type = QueueType(data.Options[0].Value.(string))
-	return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: fmt.Sprintf("Queue type set to `%s`", queue.Type),
-		},
-	})
-}
+// func (b *Bot) QueueType(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
+// 	queue := b.Queues.Get(event.GuildID)
 
-func (b *Bot) ClearQueue(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
-	queue := b.Queues.Get(event.GuildID)
-	if queue == nil {
-		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "No player found",
-			},
-		})
-	}
+// 	if queue == nil {
+// 		return b.SendResponse(event.Interaction, "Configuration Error",
+// 			fmt.Sprintf("%s No active player found.", IconError), ColorError)
+// 	}
 
-	queue.Clear()
-	return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: "Queue cleared",
-		},
-	})
-}
+// 	// Capture the value from Discord
+// 	val := data.Options[0].StringValue()
+// 	newType := QueueType(val)
 
-func (b *Bot) Queue(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
-	queue := b.Queues.Get(event.GuildID)
-	if queue == nil {
-		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "No player found",
-			},
-		})
-	}
+// 	// Check if the type is actually valid by checking our String() output
+// 	if newType.String() == "unknown" {
+// 		return b.SendResponse(event.Interaction, "Configuration Error",
+// 			fmt.Sprintf("%s Invalid queue mode selected.", IconError), ColorError)
+// 	}
 
-	if len(queue.Tracks) == 0 {
-		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "No tracks in queue",
-			},
-		})
-	}
+// 	queue.Type = newType
 
-	var tracks string
-	for i, track := range queue.Tracks {
-		tracks += fmt.Sprintf("%d. [`%s`](<%s>)\n", i+1, track.Info.Title, *track.Info.URI)
-	}
+// 	return b.SendResponse(
+// 		event.Interaction,
+// 		"Queue Mode Updated",
+// 		fmt.Sprintf("%s Queue mode has been set to: **%s**", IconRepeat, queue.Type.String()),
+// 		ColorSuccess,
+// 	)
+// }
 
-	fullMessage := fmt.Sprintf("Queue `%s`:\n%s", queue.Type, tracks)
+// func (b *Bot) ClearQueue(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
+// 	queue := b.Queues.Get(event.GuildID)
 
-	// Check if the message length exceeds 2000 characters
-	if len(fullMessage) > 2000 {
-		fullMessage = fullMessage[:1997] + "..."
-	}
+// 	// 1. Error: No queue exists for this guild
+// 	if queue == nil {
+// 		return b.SendResponse(
+// 			event.Interaction,
+// 			"Queue Error",
+// 			fmt.Sprintf("%s No active player or queue found.", IconError),
+// 			ColorError,
+// 		)
+// 	}
 
-	return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: fullMessage,
-		},
-	})
-}
+// 	// 2. Logic: Clear the tracks
+// 	// We can check the count before clearing to give a more detailed message
+// 	count := len(queue.Tracks)
+// 	queue.Clear()
 
-func (b *Bot) Pause(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
-	player := b.Lavalink.ExistingPlayer(snowflake.MustParse(event.GuildID))
-	if player == nil {
-		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "No player found",
-			},
-		})
-	}
+// 	// 3. Success Card
+// 	return b.SendResponse(
+// 		event.Interaction,
+// 		"Queue Cleared",
+// 		fmt.Sprintf("%s Successfully removed **%d** tracks from the queue.", IconSuccess, count),
+// 		ColorSuccess,
+// 	)
+// }
 
-	if err := player.Update(context.Background(), lavalink.WithPaused(!player.Paused())); err != nil {
-		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: fmt.Sprintf("Error while pausing: `%s`", err),
-			},
-		})
-	}
+// func (b *Bot) Queue(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
+// 	queue := b.Queues.Get(event.GuildID)
 
-	status := "playing"
-	if player.Paused() {
-		status = "paused"
-	}
+// 	// 1. Error: No queue found
+// 	if queue == nil {
+// 		return b.SendResponse(event.Interaction, "Queue Status",
+// 			fmt.Sprintf("%s No active player found.", IconError), ColorError)
+// 	}
 
-	return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: fmt.Sprintf("Player is now %s", status),
-		},
-	})
-}
+// 	// 2. Case: Empty Queue
+// 	if len(queue.Tracks) == 0 {
+// 		return b.SendResponse(event.Interaction, "Queue Status",
+// 			fmt.Sprintf("%s The queue is currently empty.", IconEmpty), ColorDefault)
+// 	}
 
-func (b *Bot) Stop(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
-	player := b.Lavalink.ExistingPlayer(snowflake.MustParse(event.GuildID))
-	if player == nil {
-		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "No player found",
-			},
-		})
-	}
+// 	// 3. Logic: Build the track list string
+// 	var tracks string
+// 	for i, track := range queue.Tracks {
+// 		// Stop adding if we approach the embed description limit (4096)
+// 		line := fmt.Sprintf("**%d.** [`%s`](<%s>)\n", i+1, track.Info.Title, *track.Info.URI)
+// 		if len(tracks)+len(line) > 4000 {
+// 			tracks += "...and more"
+// 			break
+// 		}
+// 		tracks += line
+// 	}
 
-	if err := b.Session.ChannelVoiceJoinManual(event.GuildID, "", false, false); err != nil {
-		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: fmt.Sprintf("Error while disconnecting: `%s`", err),
-			},
-		})
-	}
+// 	// 4. Success Card
+// 	return b.SendResponse(
+// 		event.Interaction,
+// 		fmt.Sprintf("%s Current Queue (%s)", IconQueue, queue.Type.String()),
+// 		tracks,
+// 		ColorDefault,
+// 	)
+// }
 
-	return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: "Player stopped",
-		},
-	})
-}
+// func (b *Bot) Pause(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
+// 	player := b.Lavalink.ExistingPlayer(snowflake.MustParse(event.GuildID))
+// 	if player == nil {
+// 		return b.SendResponse(event.Interaction, "Playback Error",
+// 			fmt.Sprintf("%s No active player found.", IconError), ColorError)
+// 	}
 
-func (b *Bot) NowPlaying(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
-	player := b.Lavalink.ExistingPlayer(snowflake.MustParse(event.GuildID))
-	if player == nil {
-		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "No player found",
-			},
-		})
-	}
+// 	// Toggle the current paused state
+// 	willPause := !player.Paused()
+// 	err := player.Update(context.Background(), lavalink.WithPaused(willPause))
 
-	track := player.Track()
-	if track == nil {
-		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "No track found",
-			},
-		})
-	}
+// 	if err != nil {
+// 		return b.SendResponse(event.Interaction, "Playback Error",
+// 			fmt.Sprintf("%s Error while updating player: `%s`", IconError, err), ColorError)
+// 	}
 
-	return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: fmt.Sprintf("Now playing: [`%s`](<%s>)\n\n %s / %s", track.Info.Title, *track.Info.URI, formatPosition(player.Position()), formatPosition(track.Info.Length)),
-		},
-	})
-}
+// 	// Prepare UI based on the new state
+// 	status := "Resumed"
+// 	icon := IconPlay
+// 	color := ColorSuccess
 
-func (b *Bot) Play(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
-	identifier := data.Options[0].StringValue()
-	if !urlPattern.MatchString(identifier) && !searchPattern.MatchString(identifier) {
-		switch b.SearchType {
-		case bot_config.YouTube:
-			identifier = lavalink.SearchTypeYouTube.Apply(identifier)
-		case bot_config.YouTubeMusic:
-			identifier = lavalink.SearchTypeYouTubeMusic.Apply(identifier)
-		case bot_config.SoundCloud:
-			identifier = lavalink.SearchTypeSoundCloud.Apply(identifier)
-		}
-	}
+// 	if willPause {
+// 		status = "Paused"
+// 		icon = IconPause
+// 		color = ColorWarning // Yellow is great for "Paused/Wait"
+// 	}
 
-	voiceState, err := b.Session.State.VoiceState(event.GuildID, event.Member.User.ID)
-	if err != nil {
-		return b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: fmt.Sprintf("Error while getting voice state: `%s`", err),
-			},
-		})
-	}
+// 	return b.SendResponse(
+// 		event.Interaction,
+// 		"Player Status",
+// 		fmt.Sprintf("%s Player is now **%s**", icon, status),
+// 		color,
+// 	)
+// }
 
-	if err := b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
-	}); err != nil {
-		return err
-	}
+// func (b *Bot) Stop(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
+// 	// 1. Check if player exists
+// 	player := b.Lavalink.ExistingPlayer(snowflake.MustParse(event.GuildID))
+// 	if player == nil {
+// 		return b.SendResponse(event.Interaction, "Playback Error",
+// 			fmt.Sprintf("%s No active player found.", IconError), ColorError)
+// 	}
 
-	player := b.Lavalink.Player(snowflake.MustParse(event.GuildID))
-	queue := b.Queues.Get(event.GuildID)
+// 	// 2. Disconnect from voice channel
+// 	// Passing an empty string for ChannelID tells Discord to leave.
+// 	if err := b.Session.ChannelVoiceJoinManual(event.GuildID, "", false, false); err != nil {
+// 		return b.SendResponse(event.Interaction, "Connection Error",
+// 			fmt.Sprintf("%s Error while disconnecting: `%s`", IconError, err), ColorError)
+// 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+// 	// 3. Success Card
+// 	return b.SendResponse(
+// 		event.Interaction,
+// 		"Disconnected",
+// 		fmt.Sprintf("%s The player has been stopped and I have left the voice channel.", IconStop),
+// 		ColorError, // Red is standard for "Stop/Disconnect"
+// 	)
+// }
 
-	var toPlay *lavalink.Track
-	b.Lavalink.BestNode().LoadTracksHandler(ctx, identifier, disgolink.NewResultHandler(
-		func(track lavalink.Track) {
-			_, _ = b.Session.InteractionResponseEdit(event.Interaction, &discordgo.WebhookEdit{
-				Content: json.Ptr(fmt.Sprintf("Loading track: [`%s`](<%s>)", track.Info.Title, *track.Info.URI)),
-			})
-			if player.Track() == nil {
-				toPlay = &track
-			} else {
-				queue.Add(track)
-			}
-		},
-		func(playlist lavalink.Playlist) {
-			_, _ = b.Session.InteractionResponseEdit(event.Interaction, &discordgo.WebhookEdit{
-				Content: json.Ptr(fmt.Sprintf("Loaded playlist: `%s` with `%d` tracks", playlist.Info.Name, len(playlist.Tracks))),
-			})
-			if player.Track() == nil {
-				toPlay = &playlist.Tracks[0]
-				queue.Add(playlist.Tracks[1:]...)
-				// Send another message for the `toPlay` track
-				_, _ = b.Session.ChannelMessageSend(event.ChannelID, fmt.Sprintf("Now playing: [`%s`](<%s>)", toPlay.Info.Title, *toPlay.Info.URI))
-			} else {
-				queue.Add(playlist.Tracks...)
-			}
-		},
-		func(tracks []lavalink.Track) {
-			_, _ = b.Session.InteractionResponseEdit(event.Interaction, &discordgo.WebhookEdit{
-				Content: json.Ptr(fmt.Sprintf("Loaded search result: [`%s`](<%s>)", tracks[0].Info.Title, *tracks[0].Info.URI)),
-			})
-			if player.Track() == nil {
-				toPlay = &tracks[0] // Send another message for the `toPlay` track
-				_, _ = b.Session.ChannelMessageSend(event.ChannelID, fmt.Sprintf("Now playing: [`%s`](<%s>)", toPlay.Info.Title, *toPlay.Info.URI))
-			} else {
-				queue.Add(tracks[0])
-			}
-		},
-		func() {
-			_, _ = b.Session.InteractionResponseEdit(event.Interaction, &discordgo.WebhookEdit{
-				Content: json.Ptr(fmt.Sprintf("Nothing found for: `%s`", identifier)),
-			})
-		},
-		func(err error) {
-			_, _ = b.Session.InteractionResponseEdit(event.Interaction, &discordgo.WebhookEdit{
-				Content: json.Ptr(fmt.Sprintf("Error while looking up query: `%s`", err)),
-			})
-		},
-	))
-	if toPlay == nil {
-		return nil
-	}
+// func (b *Bot) NowPlaying(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
+// 	player := b.Lavalink.ExistingPlayer(snowflake.MustParse(event.GuildID))
+// 	if player == nil {
+// 		return b.SendResponse(event.Interaction, "Player Status", fmt.Sprintf("%s No player found.", IconError), ColorError)
+// 	}
 
-	if err := b.Session.ChannelVoiceJoinManual(event.GuildID, voiceState.ChannelID, false, false); err != nil {
-		return err
-	}
+// 	track := player.Track()
+// 	if track == nil {
+// 		return b.SendResponse(event.Interaction, "Player Status", fmt.Sprintf("%s Nothing playing.", IconEmpty), ColorDefault)
+// 	}
 
-	return player.Update(context.Background(), lavalink.WithTrack(*toPlay))
-}
+// 	description := fmt.Sprintf("%s **Currently Playing**\n[`%s`](<%s>)\n\n`%s / %s`",
+// 		IconPlay, track.Info.Title, *track.Info.URI, formatPosition(player.Position()), formatPosition(track.Info.Length))
 
-func formatPosition(position lavalink.Duration) string {
-	if position == 0 {
-		return "0:00"
-	}
-	return fmt.Sprintf("%d:%02d", position.Minutes(), position.SecondsPart())
-}
+// 	// Using the new complex function to show the artwork!
+// 	return b.SendComplexResponse(
+// 		event.Interaction,
+// 		"Now Playing",
+// 		description,
+// 		*track.Info.ArtworkURL,
+// 		ColorDefault,
+// 	)
+// }
+
+// func (b *Bot) Play(event *discordgo.InteractionCreate, data discordgo.ApplicationCommandInteractionData) error {
+// 	identifier := data.Options[0].StringValue()
+
+// 	// 1. Handle Search Types
+// 	if !urlPattern.MatchString(identifier) && !searchPattern.MatchString(identifier) {
+// 		switch b.SearchType {
+// 		case bot_config.YouTube:
+// 			identifier = lavalink.SearchTypeYouTube.Apply(identifier)
+// 		case bot_config.YouTubeMusic:
+// 			identifier = lavalink.SearchTypeYouTubeMusic.Apply(identifier)
+// 		case bot_config.SoundCloud:
+// 			identifier = lavalink.SearchTypeSoundCloud.Apply(identifier)
+// 		}
+// 	}
+
+// 	// 2. Voice State Check
+// 	voiceState, err := b.Session.State.VoiceState(event.GuildID, event.Member.User.ID)
+// 	if err != nil {
+// 		return b.SendResponse(event.Interaction, "Connection Error",
+// 			fmt.Sprintf("%s You must be in a voice channel to play music!", IconError), ColorError)
+// 	}
+
+// 	// 3. Defer Response (Giving Lavalink time to work)
+// 	if err := b.Session.InteractionRespond(event.Interaction, &discordgo.InteractionResponse{
+// 		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+// 	}); err != nil {
+// 		return err
+// 	}
+
+// 	player := b.Lavalink.Player(snowflake.MustParse(event.GuildID))
+// 	queue := b.Queues.Get(event.GuildID)
+
+// 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+// 	defer cancel()
+
+// 	var toPlay *lavalink.Track
+// 	b.Lavalink.BestNode().LoadTracksHandler(ctx, identifier, disgolink.NewResultHandler(
+// 		// --- SINGLE TRACK LOADED ---
+// 		func(track lavalink.Track) {
+// 			b.SendComplexResponse(event.Interaction, "Track Added",
+// 				fmt.Sprintf("%s Added [`%s`](<%s>) to queue.", IconPlay, track.Info.Title, *track.Info.URI),
+// 				*track.Info.ArtworkURL, ColorSuccess)
+
+// 			if player.Track() == nil {
+// 				toPlay = &track
+// 			} else {
+// 				queue.Add(track)
+// 			}
+// 		},
+// 		// --- PLAYLIST LOADED ---
+// 		func(playlist lavalink.Playlist) {
+// 			b.SendComplexResponse(event.Interaction, "Playlist Added",
+// 				fmt.Sprintf("%s Loaded **%d** tracks from playlist: `%s`", IconQueue, len(playlist.Tracks), playlist.Info.Name),
+// 				*playlist.Tracks[0].Info.ArtworkURL, ColorSuccess)
+
+// 			if player.Track() == nil {
+// 				toPlay = &playlist.Tracks[0]
+// 				queue.Add(playlist.Tracks[1:]...)
+// 			} else {
+// 				queue.Add(playlist.Tracks...)
+// 			}
+// 		},
+// 		// --- SEARCH RESULT LOADED ---
+// 		func(tracks []lavalink.Track) {
+// 			b.SendComplexResponse(event.Interaction, "Search Result",
+// 				fmt.Sprintf("%s Playing search result: [`%s`](<%s>)", IconSearch, tracks[0].Info.Title, *tracks[0].Info.URI),
+// 				*tracks[0].Info.ArtworkURL, ColorSuccess)
+
+// 			if player.Track() == nil {
+// 				toPlay = &tracks[0]
+// 			} else {
+// 				queue.Add(tracks[0])
+// 			}
+// 		},
+// 		// --- NOTHING FOUND ---
+// 		func() {
+// 			b.SendResponse(event.Interaction, "No Results",
+// 				fmt.Sprintf("%s Nothing found for: `%s`", IconEmpty, identifier), ColorDefault)
+// 		},
+// 		// --- ERROR ---
+// 		func(err error) {
+// 			b.SendResponse(event.Interaction, "Search Error",
+// 				fmt.Sprintf("%s Error: `%s`", IconError, err), ColorError)
+// 		},
+// 	))
+
+// 	if toPlay == nil {
+// 		return nil
+// 	}
+
+// 	// Join and Play
+// 	if err := b.Session.ChannelVoiceJoinManual(event.GuildID, voiceState.ChannelID, false, false); err != nil {
+// 		return err
+// 	}
+
+// 	return player.Update(context.Background(), lavalink.WithTrack(*toPlay))
+// }
+
+// func formatPosition(position lavalink.Duration) string {
+// 	if position == 0 {
+// 		return "0:00"
+// 	}
+// 	return fmt.Sprintf("%d:%02d", position.Minutes(), position.SecondsPart())
+// }

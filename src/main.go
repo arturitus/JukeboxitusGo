@@ -38,6 +38,11 @@ func main() {
 		log.Fatal("missing 'TOKEN'")
 		return
 	}
+	geniusToken, geniusTokenFromEnv := getEnv("GENIUS_TOKEN", config.GeniusToken)
+	if token == "" {
+		log.Fatal("missing 'TOKEN'")
+		return
+	}
 	name, nameFromEnv := getEnv("NAME", config.Lavalink.Name)
 	hostName, hostNameFromEnv := getEnv("HOSTNAME", config.Lavalink.Hostname)
 	if hostName == "" {
@@ -65,6 +70,7 @@ func main() {
 	secured, _ := strconv.ParseBool(securedStr)
 
 	fmt.Printf("Token (%s): %q\n", checkSource(tokenFromEnv), token)
+	fmt.Printf("GeniusToken (%s): %q\n", checkSource(geniusTokenFromEnv), geniusToken)
 	fmt.Printf("Lavalink:\n")
 	fmt.Printf("	Name (%s): %q\n", checkSource(nameFromEnv), name)
 	fmt.Printf("	Hostname (%s): %q\n", checkSource(hostNameFromEnv), hostName)
@@ -77,7 +83,8 @@ func main() {
 		Queues: &bot.QueueManager{
 			Queues: make(map[string]*bot.Queue),
 		},
-		SearchType: bot_config.ParseSearchType(searchTypeStr),
+		SearchType:  bot_config.ParseSearchType(searchTypeStr),
+		GeniusToken: geniusToken,
 	}
 
 	session, err := discordgo.New("Bot " + token)
@@ -121,6 +128,10 @@ func main() {
 		"clear-queue": b.ClearQueue,
 		"queue-type":  b.QueueType,
 		"shuffle":     b.Shuffle,
+		"volume":      b.Volume,
+		"bass-boost":  b.BassBoost,
+		"eight-d":     b.EightD,
+		"lyrics":      b.Lyrics,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

@@ -10,6 +10,7 @@ type LavalinkConfig struct {
 }
 
 type Config struct {
-	Token    string         `yaml:"Token"`
-	Lavalink LavalinkConfig `yaml:"Lavalink"`
+	Token       string         `yaml:"Token"`
+	GeniusToken string         `yaml:"GeniusToken"`
+	Lavalink    LavalinkConfig `yaml:"Lavalink"`
 }
